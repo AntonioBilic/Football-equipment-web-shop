@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
      # my app
     'football_web_shop_app',
-    'phonenumber_field'
+    'phonenumber_field',
+    'django_countries',
 
 ]
 
