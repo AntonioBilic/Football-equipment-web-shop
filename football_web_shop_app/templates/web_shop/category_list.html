@@ -1,0 +1,121 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Categories</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Custom style to handle nested dropdowns */
+        .dropdown-submenu {
+            position: relative;
+        }
+
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -1px;
+            color: #000;
+        }
+
+        /* Custom styles for black background and white text */
+        .navbar-custom {
+            background-color: #000;
+        }
+
+        .navbar-custom .navbar-brand,
+        .navbar-custom .nav-link,
+        .navbar-custom {
+            color: #fff;
+        }
+
+        .navbar-custom .dropdown-item:hover,
+        .navbar-custom .nav-link:hover {
+            color: #000;
+            background-color: #fff;
+        }
+
+        .category-items {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <a class="navbar-brand" href="#">Categories</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+            aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                {% for categories in categories %}
+                    {% if not categories.parent %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown{{ category.id }}" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ categories.name }}
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown{{ category.id }}">
+                                <a class="dropdown-item" href="#" onclick="showItems({{ category.id }})">Show All Products</a>
+                                {% for subcategory in categories.subcategories.all %}
+                                    <a class="dropdown-item" href="#" onclick="showItems({{ subcategory.id }})">{{ subcategory.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div id="items-container">
+            {% for categories in categories %}
+                <div id="category-items-{{ category.id }}" class="category-items">
+                    <h2>{{ categories.name }}</h2>
+                    <div class="row">
+                        {% for product in categories.products.all %}
+                            <div class="col-md-4">
+                                <div class="card mb-4">
+                                    <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ product.name }}</h5>
+                                        <p class="card-text">{{ product.description }}</p>
+                                        <p class="card-text"><strong>${{ product.price }}</strong></p>
+                                        <a href="" class="btn btn-primary">Add to Cart</a>
+                                        <a href="" class="btn btn-secondary">Add to Wishlist</a>
+                                        <a href="" class="btn btn-info">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script>
+        function showItems(categoryId) {
+            // Hide all category items
+            document.querySelectorAll('.category-items').forEach(function (element) {
+                element.style.display = 'none';
+            });
+
+            // Show the selected category items
+            var categoryItems = document.getElementById('category-items-' + categoryId);
+            if (categoryItems) {
+                categoryItems.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+
+</html>
