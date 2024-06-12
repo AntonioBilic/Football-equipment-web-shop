@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'football_web_shop_app',
     'phonenumber_field',
     'django_countries',
+    'crispy_forms',
+     'crispy_bootstrap4'
 
 ]
 
@@ -68,6 +70,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'football_web_shop_app.context_processors.cart_item_count',
+                
             ],
         },
     },
@@ -137,3 +141,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'football_web_shop_app.User'
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'

@@ -22,6 +22,16 @@
             padding: 5px 8px;
             border-radius: 50%;
         }
+        .fixed-category-navbar {
+            position: fixed;
+            top: 56px; /* Adjust based on the height of the main navbar */
+            width: 100%;
+            z-index: 1030; /* Ensure it's above other content */
+            background-color: #000;
+        }
+        body {
+            padding-top: 112px; /* Adjust based on the height of both navbars */
+        }
     </style>
 </head>
 <body>
@@ -30,14 +40,11 @@
     {% block content %}
     {% endblock %}
 
-
     <!-- Footer -->
-    
     {% include "web_shop/footer.html" %}
-    
+
     <!-- Bootstrap JavaScript and jQuery -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
-    
 </body>
 </html>

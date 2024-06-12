@@ -2,21 +2,81 @@
 {% block title %}Home - Football Equipment Web Shop{% endblock %}
 
 {% block content %}
-    <!-- Your content for the home page goes here -->
-   
+<!-- Your content for the home page goes here -->
 
-    <div class="container mt-5">
-        <div id="items-container">
-            <div class="container my-5">
-                <div class="row">
-                    <!-- Sidebar -->
-                   
-                    <!-- Main Content -->
-                    <div class="row">
-                        {% for product in products %}
+<body>
+    <style>
+        .navbar-custom {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .navbar-custom .navbar-brand,
+        .navbar-custom .nav-link {
+            color: #fff;
+        }
+
+        .category-title, .subcategory-title {
+            background-color: #000;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .fixed-category-navbar {
+            position: fixed;
+            top: 97px; /* Adjust based on the height of the main navbar */
+            width: 100%;
+            z-index: 1030; /* Ensure it's above other content */
+            background-color: #000;
+        }
+
+        .content {
+            margin-top: 55px; /* Adjust to ensure content is below the fixed category navbar */
+        }
+    </style>
+
+    <!-- Category Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom fixed-category-navbar">
+        <a class="navbar-brand" href="#">Categories</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+            aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                {% for category in categories %}
+                    {% if not category.parent %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown{{ category.id }}" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ category.name }}
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown{{ category.id }}">
+                                <a class="dropdown-item" href="#" onclick="showItems('all')">Show All Products</a>
+                                {% for subcategory in category.subcategories.all %}
+                                    <a class="dropdown-item" href="#" onclick="showItems({{ subcategory.id }})">{{ subcategory.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Products Display -->
+    <div class="container content">
+        <div id="all-items" class="category-items">
+            <h2 class="category-title">All Products</h2>
+            <div class="row">
+                {% for category in categories %}
+                    {% for product in category.products.all %}
                         <div class="col-md-4">
                             <div class="card mb-4 shadow-sm">
-                                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                                <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
                                 <div class="card-body">
                                     <h5 class="card-title">{{ product.name }}</h5>
                                     <p class="card-text">{{ product.description }}</p>
@@ -30,12 +90,66 @@
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
         </div>
+        
+        {% for category in categories %}
+            <div id="category-items-{{ category.id }}" class="category-items" style="display: none;">
+                <h2 class="category-title">{{ category.name }}</h2>
+                <div class="row">
+                    {% for product in category.products.all %}
+                        <div class="col-md-4">
+                            <div class="card mb-4 shadow-sm">
+                                <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ product.name }}</h5>
+                                    <p class="card-text">{{ product.description }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="btn-group">
+                                            <a href="{% url 'product_detail' product.id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary">Add to cart</button>
+                                        </div>
+                                        <small class="text-muted">${{ product.price }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
     </div>
-<footer class="container-fluid"></footer>
+
+    <footer class="container-fluid mt-5"></footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <script>
-        // JavaScript for showing items and handling nested dropdowns
+        function showItems(categoryId) {
+            // Hide all category items
+            document.querySelectorAll('.category-items').forEach(function (element) {
+                element.style.display = 'none';
+            });
+
+            // Show the selected category items
+            if (categoryId === 'all') {
+                document.getElementById('all-items').style.display = 'block';
+            } else {
+                var categoryItems = document.getElementById('category-items-' + categoryId);
+                if (categoryItems) {
+                    categoryItems.style.display = 'block';
+                }
+            }
+        }
+
+        // Initially show all products
+        document.addEventListener("DOMContentLoaded", function () {
+            showItems('all');
+        });
     </script>
+</body>
 {% endblock %}

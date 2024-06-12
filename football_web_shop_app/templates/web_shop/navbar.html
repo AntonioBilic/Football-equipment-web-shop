@@ -1,7 +1,7 @@
 {% load static %}
-<nav class="navbar navbar-expand-lg navbar-dark border-light py-4">
-    <a class="navbar-brand" href="">
-        <img src="{% static 'logo.png' %}"width="200" height="70" class="d-inline-block align-top" alt="">
+<nav class="navbar navbar-expand-lg navbar-dark border-light py-2 fixed-top">
+    <a class="navbar-brand" href="{% url 'home' %}">
+        <img src="{% static 'logo.png' %}" width="200" height="70" class="d-inline-block align-top" alt="">
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -21,11 +21,12 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="{% url 'order_detail' %}" style="position: relative;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cart" viewBox="0 0 16 16">
                         <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4m-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
                     </svg>
                     Cart
+                    <span class="badge badge-dark cart-badge">{{ cart_item_count }}</span>
                 </a>
             </li>
             {% if user.is_authenticated %}
@@ -37,8 +38,7 @@
                     </svg>
                     {{ user.username }}
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                    <li><a class="dropdown-item" href="#">Account Settings</a></li>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown" style="top: 25px;">
                     <li><a class="dropdown-item" href="{% url 'logout' %}">Sign Out</a></li>
                 </ul>
             </li>
@@ -53,3 +53,21 @@
         </ul>
     </div>
 </nav>
+<style>
+    .cart-badge {
+        position: absolute;
+        
+        top: 4px;
+        margin-right: 44px;
+        padding: 1px 5px;
+        border-radius: 50%;
+        background: white;
+        color: black;
+        border: 1px solid black;
+    }
+  .dropdown-item {
+        padding: 2px 5px; /* Adjust padding for smaller size */
+        font-size: 0.875rem; /* Adjust font size for smaller text */
+    }
+    
+</style>
