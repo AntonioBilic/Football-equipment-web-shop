@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'football_web_shop_app.context_processors.cart_item_count',
+                'football_web_shop_app.context_processors.wishlist_count',
                 
             ],
         },

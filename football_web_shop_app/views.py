@@ -5,7 +5,7 @@ from django.contrib.auth import login, authenticate,logout
 from django.contrib import messages
 from .models import *
 from django.template.context_processors import csrf
-
+from django.contrib.auth.decorators import login_required
 
 def home(request):
     products = Product.objects.all()
@@ -110,7 +110,7 @@ def add_to_order(request, product_id):
     order.price = sum(item.total_price  for item in order.items.all())
     order.save()
     
-    return redirect('order_detail')
+    return redirect('home')
 
 
 
@@ -135,3 +135,27 @@ def update_order_item_quantity(request, item_id):
     
     return redirect('order_detail')
 
+
+@login_required
+def add_to_wishlist(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, product=product)
+    
+    if not created:
+        messages.info(request, f'{product.name} is already in your wishlist.')
+    else:
+        messages.success(request, f'{product.name} has been added to your wishlist.')
+
+    return redirect('home')
+
+
+@login_required
+def wishlist(request):
+    wishlist_items = Wishlist.objects.filter(user=request.user)
+    return render(request, 'web_shop/wishlist.html', {'wishlist_items': wishlist_items})
+
+@login_required
+def remove_from_wishlist(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    Wishlist.objects.filter(user=request.user, product=product).delete()
+    return redirect('wishlist')

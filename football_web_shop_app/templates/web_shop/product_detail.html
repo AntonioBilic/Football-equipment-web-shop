@@ -43,7 +43,8 @@
                 </ul>
             </div>
             <a href="{% url 'add_to_order' product.id %}" class="btn btn-primary">Add to Cart</a>
-            <button class="btn btn-secondary">Add to Wishlist</button>
+            <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-secondary">Add to Wishlist</a>
+
         </div>
     </div>
     <div class="mt-5">

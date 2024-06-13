@@ -1,3 +1,4 @@
+<!-- base.html or navbar.html -->
 {% load static %}
 <nav class="navbar navbar-expand-lg navbar-dark border-light py-2 fixed-top">
     <a class="navbar-brand" href="{% url 'home' %}">
@@ -13,11 +14,12 @@
         </form>
         <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="{% url 'wishlist' %}" style="position: relative;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
                         <path d="M8 2.748L7.283 2.01C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15"/>
                     </svg>
                     Wishlist
+                    <span class="badge badge-dark wishlist-badge">{{ wishlist_count }}</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -53,10 +55,10 @@
         </ul>
     </div>
 </nav>
+
 <style>
-    .cart-badge {
+    .cart-badge, .wishlist-badge {
         position: absolute;
-        
         top: 4px;
         margin-right: 44px;
         padding: 1px 5px;
@@ -65,9 +67,18 @@
         color: black;
         border: 1px solid black;
     }
-  .dropdown-item {
+    .wishlist-badge{
+        position:absolute;
+        border-radius: 50%;
+        background: white;
+        color: black;
+        border: 1px solid black;
+        top: 4px;
+        padding: 1px 5px;
+        margin-right: 70px;
+    }
+    .dropdown-item {
         padding: 2px 5px; /* Adjust padding for smaller size */
         font-size: 0.875rem; /* Adjust font size for smaller text */
     }
-    
 </style>

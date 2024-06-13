@@ -13,6 +13,8 @@ urlpatterns = [
     path('remove_from_order/<int:item_id>/', views.remove_from_order, name='remove_from_order'),
     path('product/<int:id>/', views.product_detail_view, name='product_detail'),
     path('update_order_item_quantity/<int:item_id>/', views.update_order_item_quantity, name='update_order_item_quantity'),
-    
+    path('product/<int:product_id>/add_to_wishlist/', views.add_to_wishlist, name='add_to_wishlist'),
+    path('wishlist/', views.wishlist, name='wishlist'),
+    path('product/<int:product_id>/remove_from_wishlist/', views.remove_from_wishlist, name='remove_from_wishlist'),
 
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
