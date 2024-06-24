@@ -16,5 +16,14 @@ urlpatterns = [
     path('product/<int:product_id>/add_to_wishlist/', views.add_to_wishlist, name='add_to_wishlist'),
     path('wishlist/', views.wishlist, name='wishlist'),
     path('product/<int:product_id>/remove_from_wishlist/', views.remove_from_wishlist, name='remove_from_wishlist'),
-
+    path('add_to_order/<int:product_id>/', views.add_to_order, name='add_to_order'),
+    path('create-checkout-session/', views.create_checkout_session, name='create_checkout_session'),
+    path('webhook/', views.stripe_webhook, name='stripe_webhook'),
+    path('success/', views.success_view, name='success'),
+    path('cancel/', views.cancel_view, name='cancel'),
+    path('settings/edit/', views.edit_profile, name='edit_profile'),
+    path('settings/', views.user_settings, name='user_settings'),
+    path('add-shipping-address/', views.add_shipping_address, name='add_shipping_address'),
+  
+ 
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

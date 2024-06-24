@@ -21,20 +21,42 @@
             margin-bottom: 20px;
         }
         .fixed-category-navbar {
-            position: fixed;
-            top: 97px; /* Adjust based on the height of the main navbar */
+            top: 97px;
             width: 100%;
-            z-index: 1030; /* Ensure it's above other content */
+            z-index: 1030;
             background-color: #000;
         }
         .content {
-            margin-top: 55px; /* Adjust to ensure content is below the fixed category navbar */
+            margin-top: 55px;
+        }
+        .filter-dropdown {
+            margin-bottom: 15px;
+        }
+        .filter-dropdown .dropdown-menu {
+            padding: 10px;
+        }
+        .btn-dark-custom {
+            background-color: black;
+            color: white;
+            border: none;
+        }
+        .btn-dark-custom:hover {
+            background-color: #333;
+            color: white;
+        }
+        .filter-section {
+            margin-top: 20px;
+            padding-right: 30px;
+            left: -200px;
+        }
+        .product-section {
+            margin-top: 20px;
         }
     </style>
 
     <!-- Category Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom fixed-category-navbar">
-        <a class="navbar-brand" href="#">Categories</a>
+        <a class="navbar-brand" href="{% url 'home' %}">Show All Products</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
             aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -49,9 +71,9 @@
                                 {{ category.name }}
                             </a>
                             <div class="dropdown-menu" aria-labelledby="navbarDropdown{{ category.id }}">
-                                <a class="dropdown-item" href="#" onclick="showItems('all')">Show All Products</a>
+                                <a class="dropdown-item" href="{% url 'home' %}?category_id={{ category.id }}">Show All Products in {{ category.name }}</a>
                                 {% for subcategory in category.subcategories.all %}
-                                    <a class="dropdown-item" href="#" onclick="showItems({{ subcategory.id }})">{{ subcategory.name }}</a>
+                                    <a class="dropdown-item" href="{% url 'home' %}?subcategory_id={{ subcategory.id }}">{{ subcategory.name }}</a>
                                 {% endfor %}
                             </div>
                         </li>
@@ -61,91 +83,94 @@
         </div>
     </nav>
 
-    <!-- Products Display -->
+    <!-- Filters and Products Display -->
     <div class="container content">
-        <div id="all-items" class="category-items">
-            <h2 class="category-title">All Products</h2>
-            <div class="row">
-                {% for category in categories %}
-                    {% for product in category.products.all %}
-                        <div class="col-md-4">
-                            <div class="card mb-4 shadow-sm">
-                                <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ product.name }}</h5>
-                                    <p class="card-text">{{ product.description }}</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="btn-group">
-                                            <a href="{% url 'product_detail' product.id %}" class="btn btn-sm btn-outline-secondary">View</a>
-                                            <a href="{% url 'add_to_order' product.id %}" class="btn btn-sm btn-outline-secondary">Add to cart</a>
-                                            <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-sm btn-outline-secondary">Wishlist</a>
-                                        </div>
-                                        <small class="text-muted">${{ product.price }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endfor %}
+        <div class="row">
+            <div class="col-md-3 filter-section">
+                <h4>Filter by</h4>
+                <form method="get" action="{% url 'home' %}">
+                    <div class="filter-dropdown dropdown mb-3">
+                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="priceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Price Range
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="priceDropdown">
+                            <li class="mb-2">
+                                <label for="min_price" class="form-label">Min Price</label>
+                                <input type="number" id="min_price" name="min_price" class="form-control" placeholder="Min Price" value="{{ min_price }}">
+                            </li>
+                            <li>
+                                <label for="max_price" class="form-label">Max Price</label>
+                                <input type="number" id="max_price" name="max_price" class="form-control" placeholder="Max Price" value="{{ max_price }}">
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="filter-dropdown dropdown mb-3">
+                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="colorDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Color
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="colorDropdown">
+                            <li>
+                                <label for="color" class="form-label">Color</label>
+                                <input type="text" id="color" name="color" class="form-control" placeholder="Color" value="{{ color }}">
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="filter-dropdown dropdown mb-3">
+                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="brandDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Brand
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="brandDropdown">
+                            {% for brand in brands %}
+                            <li>
+                                <a class="dropdown-item" href="?brand={{ brand.id }}">{{ brand.name }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="filter-dropdown dropdown mb-3">
+                        <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="sizeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Size
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="sizeDropdown">
+                            {% for size in sizes %}
+                            <li>
+                                <a class="dropdown-item" href="?size={{ size.id }}">{{ size.name }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <button type="submit" class="btn btn-dark-custom w-100">Filter</button>
+                </form>
             </div>
-        </div>
-        
-        {% for category in categories %}
-            <div id="category-items-{{ category.id }}" class="category-items" style="display: none;">
-                <h2 class="category-title">{{ category.name }}</h2>
-                <div class="row">
-                    {% for product in category.products.all %}
-                        <div class="col-md-4">
-                            <div class="card mb-4 shadow-sm">
-                                <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ product.name }}</h5>
-                                    <p class="card-text">{{ product.description }}</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="btn-group">
-                                            <a href="{% url 'product_detail' product.id %}" class="btn btn-sm btn-outline-secondary">View</a>
-                                            <a href="{% url 'add_to_order' product.id %}" class="btn btn-sm btn-outline-secondary">Add to cart</a>
-                                            <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-sm btn-outline-secondary">Wishlist</a>
+            <div class="col-md-9 product-section">
+                <div id="all-items" class="category-items">
+                    <h2 class="category-title">All Products</h2>
+                    <div class="row">
+                        {% for product in products %}
+                            <div class="col-md-4">
+                                <div class="card mb-4 shadow-sm" style="width: 18rem;">
+                                    <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ product.name }}</h5>
+                                        <p class="card-text">{{ product.price }}€</p>
+                                        <div class="d-grid gap-2">
+                                            <a href="{% url 'product_detail' product.id %}" class="btn btn-dark-custom rounded-pill mb-2">View</a>
+                                            <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-dark-custom rounded-pill">Wishlist</a>
                                         </div>
-                                        <small class="text-muted">${{ product.price }}</small>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
-        {% endfor %}
+        </div>
     </div>
 
     <footer class="container-fluid mt-5"></footer>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-    <script>
-        function showItems(categoryId) {
-            // Hide all category items
-            document.querySelectorAll('.category-items').forEach(function (element) {
-                element.style.display = 'none';
-            });
-
-            // Show the selected category items
-            if (categoryId === 'all') {
-                document.getElementById('all-items').style.display = 'block';
-            } else {
-                var categoryItems = document.getElementById('category-items-' + categoryId);
-                if (categoryItems) {
-                    categoryItems.style.display = 'block';
-                }
-            }
-        }
-
-        // Initially show all products
-        document.addEventListener("DOMContentLoaded", function () {
-            showItems('all');
-        });
-    </script>
 </body>
 {% endblock %}
