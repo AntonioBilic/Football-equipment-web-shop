@@ -23,7 +23,7 @@ urlpatterns = [
     path('cancel/', views.cancel_view, name='cancel'),
     path('settings/edit/', views.edit_profile, name='edit_profile'),
     path('settings/', views.user_settings, name='user_settings'),
-    path('add-shipping-address/', views.add_shipping_address, name='add_shipping_address'),
+    path('add_shipping_address/', views.add_shipping_address, name='add_shipping_address'),
   
  
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

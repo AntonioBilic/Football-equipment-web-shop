@@ -1,4 +1,3 @@
-<!-- order_detail.html -->
 {% extends "web_shop/base.html" %}
 {% block content %}
 <div class="container mt-5">
@@ -44,6 +43,7 @@
         <h4>Total: €{{ order.price }}</h4>
         {% if order.shipping_address %}
             <a href="{% url 'create_checkout_session' %}" class="btn btn-dark">Proceed to Checkout</a>
+            <a href="{% url 'add_shipping_address' %}" class="btn btn-dark">Change Shipping Address</a>
         {% else %}
             <a href="{% url 'add_shipping_address' %}" class="btn btn-dark">Add Shipping Address</a>
         {% endif %}
@@ -53,4 +53,3 @@
     {% endif %}
 </div>
 {% endblock %}
-

@@ -42,9 +42,12 @@
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn btn-dark mt-3">Add to Cart</button>
+                <div class="d-flex mt-3">
+                    <button type="submit" class="btn btn-dark me-2">Add to Cart</button>
+                    <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-dark">Add to Wishlist</a>
+                </div>
             </form>
-            <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-dark mt-3">Add to Wishlist</a>
+            
             {% if user.is_authenticated %}
             <button id="addReviewBtn" class="btn btn-dark mt-3">Add Review and Rating</button>
             <form id="reviewForm" method="post" class="needs-validation mt-3 d-none" novalidate>

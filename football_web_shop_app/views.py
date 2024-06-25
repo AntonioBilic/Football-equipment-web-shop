@@ -11,6 +11,7 @@ import stripe
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
 
 
 
@@ -27,6 +28,23 @@ def home(request):
     size_id = request.GET.get('size')
     category_id = request.GET.get('category_id')
     subcategory_id = request.GET.get('subcategory_id')
+    category_name = "All Products"
+
+    if category_id:
+        category = get_object_or_404(Category, id=category_id)
+        products = Product.objects.filter(category=category)
+        category_name = f"All Products in {category.name}"
+    elif subcategory_id:
+        subcategory = get_object_or_404(Category, id=subcategory_id)
+        products = Product.objects.filter(category=subcategory)
+        category_name = f"All Products in {subcategory.name}"
+    else:
+        products = Product.objects.all()
+    
+    categories = Category.objects.all()
+
+
+
 
     products = Product.objects.all()
     categories = Category.objects.filter(parent=None)
@@ -52,6 +70,11 @@ def home(request):
         subcategories = Category.objects.filter(parent_id=category_id)
         products = products.filter(category__in=subcategories) | products.filter(category__id=category_id)
 
+     # Implementing pagination
+    paginator = Paginator(products, 6)  # Show 6 products per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
         'products': products,
         'categories': categories,
@@ -65,7 +88,10 @@ def home(request):
         'color': color,
         'brand_id': brand_id,
         'size_id': size_id,
+        'page_obj': page_obj,
+        'category_name': category_name,
     }
+
     return render(request, 'web_shop/home.html', context)
 
 
@@ -281,13 +307,23 @@ def stripe_webhook(request):
     # Handle the event
     if event['type'] == 'payment_intent.succeeded':
         payment_intent = event['data']['object']
+
         # Fulfill the purchase
+        order_id = payment_intent.get('metadata', {}).get('order_id')
+        if order_id:
+            order = get_object_or_404(Order, id=order_id)
+            
+            order.paid_status = True
+            order.save()
+
+            # Clear the cart (delete order items)
+            OrderItem.objects.filter(order=order).delete()
+
     elif event['type'] == 'payment_intent.payment_failed':
         payment_intent = event['data']['object']
-        # Notify the customer that their order was unsuccessful
+       
 
     return HttpResponse(status=200)
-
 
 def create_checkout_session(request):
     order = get_object_or_404(Order, user=request.user, paid_status=False)
@@ -316,11 +352,15 @@ def create_checkout_session(request):
             mode='payment',
             success_url=domain_url + 'success/',
             cancel_url=domain_url + 'cancel/',
+            metadata={
+                'order_id': order.id  # Pass the order ID to the webhook
+            }
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e:
         messages.error(request, f'Error creating Stripe checkout session: {str(e)}')
         return redirect('order_detail')
+
 
 def success_view(request):
     return render(request, 'web_shop/success.html')
