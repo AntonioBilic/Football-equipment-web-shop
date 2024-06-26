@@ -193,8 +193,12 @@ def add_to_order(request, product_id):
         size = get_object_or_404(Size, id=size_id)
         quantity = int(request.POST.get('quantity', 1))
         
-        # Get or create the order for the user
-        order, created = Order.objects.get_or_create(user=request.user, paid_status=False)
+        # Attempt to get the most recent unpaid order for the user
+        order = Order.objects.filter(user=request.user, paid_status=False).order_by('-order_date').first()
+        
+        # If no unpaid order exists, create a new one
+        if not order:
+            order = Order.objects.create(user=request.user, paid_status=False)
         
         # Get or create the order item for the specified product and size
         order_item, created = OrderItem.objects.get_or_create(
@@ -273,9 +277,11 @@ def add_shipping_address(request):
             shipping_address.user = request.user
             shipping_address.save()
             
-            order = get_object_or_404(Order, user=request.user, paid_status=False)
-            order.shipping_address = shipping_address
-            order.save()
+            # Get the most recent unpaid order for the user
+            order = Order.objects.filter(user=request.user, paid_status=False).order_by('-order_date').first()
+            if order:
+                order.shipping_address = shipping_address
+                order.save()
             
             messages.success(request, 'Shipping address added successfully!')
             return redirect('order_detail')
@@ -283,6 +289,7 @@ def add_shipping_address(request):
         form = ShippingAddressForm()
     
     return render(request, 'web_shop/add_shipping_address.html', {'form': form})
+
 
 #STRIPE PAYMENT 
 @csrf_exempt
@@ -367,3 +374,10 @@ def success_view(request):
 
 def cancel_view(request):
     return render(request, 'web_shop/cancel.html')
+
+@login_required(login_url='login')
+def clear_cart_items(request):
+    if request.method == 'POST':
+        OrderItem.objects.filter(order__user=request.user, order__paid_status=False).delete()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'failed', 'message': 'Invalid request method.'}, status=400)
