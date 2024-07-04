@@ -148,3 +148,23 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STRIPE_SECRET_KEY = 'sk_test_51PT9TQ01oRStvWy5M58IY2naifsmBKl6KEsHKQb1LcVhLxz0o4qclJ6MYfqBqsoE0DZRIof5LoOT1WuAF80GCB3z00mFlLCDih'
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51PT9TQ01oRStvWy5j4CnWzwBmLor2vDwrE1LaxDYqaROhDYEWO4Y4akt8hXoYbKrpZCOOsHoVUT5ZJDhUdnvV76v009KjgKrj4'
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}

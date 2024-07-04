@@ -59,24 +59,5 @@
     }
 </style>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch("{% url 'clear_cart_items' %}", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": "{{ csrf_token }}"
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === "success") {
-          console.log("Cart items cleared successfully.");
-        } else {
-          console.error("Failed to clear cart items:", data.message);
-        }
-      })
-      .catch(error => console.error("Error:", error));
-    });
-  </script>
+
 {% endblock %}

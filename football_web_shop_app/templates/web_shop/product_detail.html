@@ -8,11 +8,11 @@
             <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
                 <div class="carousel-inner">
                     <div class="carousel-item active">
-                        <img src="{{ product.image.url }}" class="d-block w-100 " alt="{{ product.name }}">
+                        <img src="{{ product.image.url }}" class="d-block w-100" alt="{{ product.name }}">
                     </div>
                     {% for image in product_images %}
                     <div class="carousel-item">
-                        <img src="{{ image.images.url }}" class="d-block w-100 " alt="{{ product.name }}">
+                        <img src="{{ image.images.url }}" class="d-block w-100" alt="{{ product.name }}">
                     </div>
                     {% endfor %}
                 </div>
@@ -32,19 +32,19 @@
             <h2>{{ product.price }}€</h2>
             <p>Brand: {{ product.brand.name }}</p>
             
-            <form method="post" action="{% url 'add_to_order' product.id %}">
+            <form method="post" action="{% url 'add_to_order' product.id %}" id="addToCartForm">
                 {% csrf_token %}
                 <div class="form-group">
                     <label for="size">Size</label>
-                    <select id="size" name="size" class="form-control">
-                        {% for size in product.sizes.all %}
-                        <option value="{{ size.id }}">{{ size.name }}</option>
+                    <select id="size" name="size" class="form-control" required>
+                        {% for size_info in sizes_with_stock %}
+                        <option value="{{ size_info.size.id }}" data-stock="{{ size_info.stock_quantity }}">{{ size_info.size.name }} - {{ size_info.stock_quantity }} in stock</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="d-flex mt-3">
                     <button type="submit" class="btn btn-dark me-2">Add to Cart</button>
-                    <a href="{% url 'add_to_wishlist' product.id %}" class="btn btn-dark">Add to Wishlist</a>
+                    <a href="{% url 'add_to_wishlist' product.id %}" id="addToWishlistBtn" class="btn btn-dark">Add to Wishlist</a>
                 </div>
             </form>
             
@@ -98,6 +98,28 @@
             form.classList.remove('d-none');
         } else {
             form.classList.add('d-none');
+        }
+    });
+
+    document.getElementById('addToCartForm').addEventListener('submit', function(event) {
+        var sizeSelect = document.getElementById('size');
+        var selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+        var stockQuantity = selectedOption.getAttribute('data-stock');
+
+        if (parseInt(stockQuantity) <= 0) {
+            event.preventDefault();
+            alert('This product is out of stock.');
+        }
+    });
+
+    document.getElementById('addToWishlistBtn').addEventListener('click', function(event) {
+        var sizeSelect = document.getElementById('size');
+        var selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+        var stockQuantity = selectedOption.getAttribute('data-stock');
+
+        if (parseInt(stockQuantity) <= 0) {
+            event.preventDefault();
+            alert('This product is out of stock.');
         }
     });
 </script>

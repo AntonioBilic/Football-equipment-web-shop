@@ -12,7 +12,9 @@ from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
-
+from django.db import transaction
+from django.db.models import F,Sum
+import logging
 
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -75,7 +77,7 @@ def home(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    context = {
+    data = {
         'products': products,
         'categories': categories,
         'brands': brands,
@@ -92,7 +94,7 @@ def home(request):
         'category_name': category_name,
     }
 
-    return render(request, 'web_shop/home.html', context)
+    return render(request, 'web_shop/home.html', data)
 
 
 #USER REGISTRATION,LOGIN,LOGOUT
@@ -151,13 +153,25 @@ def edit_profile(request):
     return render(request, 'account/edit_profile.html', {'form': form})
 
 #PRODUCT
-
 def product_detail_view(request, id):
     product = get_object_or_404(Product, id=id)
-    product_images = product.products_image.all()  # Assuming you have a related name 'products_image' for ProductImages
-    sizes = Product.objects.all()
+    product_images = product.products_image.all()  
     reviews = ProductReview.objects.filter(product=product)
-    
+
+    sizes_with_stock = []
+    for size in product.sizes.all():
+        try:
+            product_size = ProductSize.objects.get(product=product, size=size)
+            sizes_with_stock.append({
+                'size': size,
+                'stock_quantity': product_size.stock_quantity
+            })
+        except ProductSize.DoesNotExist:
+            sizes_with_stock.append({
+                'size': size,
+                'stock_quantity': 0
+            })
+
     if request.method == "POST":
         review_form = ProductReviewForm(request.POST)
         if review_form.is_valid():
@@ -172,73 +186,105 @@ def product_detail_view(request, id):
     return render(request, 'web_shop/product_detail.html', {
         'product': product,
         'product_images': product_images,
-        'all_sizes': sizes,
+        'sizes_with_stock': sizes_with_stock,
         'reviews': reviews,
         'review_form': review_form,
     })
-
 #ADD ORDER,ORDER DETAIL
 
+@login_required(login_url='login')
 def order_detail(request):
     order = Order.objects.filter(user=request.user, paid_status=False).first()
-    return render(request, 'web_shop/order_detail.html', {'order': order})
+    if order:
+        order_items = order.items.all()
+        product_sizes = {item.id: ProductSize.objects.get(product=item.product, size=item.size) for item in order_items}
+        out_of_stock_items = [item for item in order_items if product_sizes[item.id].stock_quantity < item.quantity]
+    else:
+        order_items = []
+        product_sizes = {}
+        out_of_stock_items = []
+
+    return render(request, 'web_shop/order_detail.html', {
+        'order': order,
+        'order_items': order_items,
+        'product_sizes': product_sizes,
+        'out_of_stock_items': out_of_stock_items,
+    })
 
 
 @login_required(login_url='login')
 def add_to_order(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    
+
     if request.method == 'POST':
         size_id = request.POST.get('size')
         size = get_object_or_404(Size, id=size_id)
         quantity = int(request.POST.get('quantity', 1))
-        
-        # Attempt to get the most recent unpaid order for the user
-        order = Order.objects.filter(user=request.user, paid_status=False).order_by('-order_date').first()
-        
-        # If no unpaid order exists, create a new one
-        if not order:
-            order = Order.objects.create(user=request.user, paid_status=False)
-        
+
+        # Get the product size to check stock quantity
+        product_size = get_object_or_404(ProductSize, product=product, size=size)
+
+        if quantity > product_size.stock_quantity:
+            messages.error(request, f'Only {product_size.stock_quantity} of {product.name} (Size: {size.name}) is available.')
+            return redirect('product_detail', id=product_id)
+
+        # Get or create an order for the user that is not yet paid
+        order, created = Order.objects.get_or_create(user=request.user, paid_status=False)
+
         # Get or create the order item for the specified product and size
-        order_item, created = OrderItem.objects.get_or_create(
+        order_item, item_created = OrderItem.objects.get_or_create(
             order=order,
             product=product,
             size=size,
             defaults={'price': product.price, 'quantity': quantity}
         )
 
-        if not created:
+        if not item_created:
             order_item.quantity += quantity
             order_item.save()
-        
+
         # Update the order total price
-        order.price = sum(item.quantity * item.price for item in order.items.all())
+        order.price = order.total_price
         order.save()
-        
-        return redirect('home')  
+
+        messages.success(request, f'Added {quantity} of {product.name} (Size: {size.name}) to your order.')
+        return redirect('order_detail')
 
     return render(request, 'web_shop/product_detail.html', {'product': product, 'sizes': product.sizes.all()})
 
-
+@login_required(login_url='login')
 def remove_from_order(request, item_id):
     order_item = get_object_or_404(OrderItem, id=item_id)
     order = order_item.order
     order_item.delete()
+    
+    # Update the order total price after item removal
+    order.price = sum(item.quantity * item.price for item in order.items.all())
+    order.save()
+    
     return redirect('home')
 
+@login_required(login_url='login')
 def update_order_item_quantity(request, item_id):
     order_item = get_object_or_404(OrderItem, id=item_id)
     if request.method == 'POST':
-        quantity = request.POST.get('quantity')
-        if quantity:
-            order_item.quantity = int(quantity)
-            order_item.save()
-            
-            # Update the order total price
-            order_item.order.price = sum(item.total_price for item in order_item.order.items.all())
-            order_item.order.save()
-    
+        quantity = int(request.POST.get('quantity', 1))
+        product_size = get_object_or_404(ProductSize, product=order_item.product, size=order_item.size)
+
+        if quantity > product_size.stock_quantity:
+            messages.success(request, f'Only {product_size.stock_quantity} of {order_item.product.name} in size {order_item.size.name} is available.')
+            return redirect('order_detail')
+
+        order_item.quantity = quantity
+        order_item.save()
+
+        # Update the order total price
+        order_item.order.price = sum(item.quantity * item.price for item in order_item.order.items.all())
+        order_item.order.save()
+
+        messages.success(request, f'The quantity of {order_item.product.name} in size {order_item.size.name} has been updated.')
+        return redirect('order_detail')
+
     return redirect('order_detail')
 
 
@@ -277,7 +323,7 @@ def add_shipping_address(request):
             shipping_address.user = request.user
             shipping_address.save()
             
-            # Get the most recent unpaid order for the user
+            
             order = Order.objects.filter(user=request.user, paid_status=False).order_by('-order_date').first()
             if order:
                 order.shipping_address = shipping_address
@@ -291,12 +337,15 @@ def add_shipping_address(request):
     return render(request, 'web_shop/add_shipping_address.html', {'form': form})
 
 
-#STRIPE PAYMENT 
+# Set up logging
+logger = logging.getLogger(__name__)
+
+
 @csrf_exempt
 def stripe_webhook(request):
     payload = request.body
     sig_header = request.META['HTTP_STRIPE_SIGNATURE']
-    endpoint_secret = 'whsec_0b11aa4927da37524bcce755bff6e2d70269865223ab74225fc3242b3c74cc57'
+    endpoint_secret = settings.STRIPE_ENDPOINT_SECRET
 
     event = None
 
@@ -305,41 +354,49 @@ def stripe_webhook(request):
             payload, sig_header, endpoint_secret
         )
     except ValueError as e:
-        # Invalid payload
+        logger.error(f"Invalid payload: {e}")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
+        logger.error(f"Invalid signature: {e}")
         return HttpResponse(status=400)
 
-    # Handle the event
-    if event['type'] == 'payment_intent.succeeded':
-        payment_intent = event['data']['object']
-
-        # Fulfill the purchase
-        order_id = payment_intent.get('metadata', {}).get('order_id')
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        order_id = session.get('metadata', {}).get('order_id')
         if order_id:
-            order = get_object_or_404(Order, id=order_id)
-            
-            order.paid_status = True
-            order.save()
+            try:
+                with transaction.atomic():
+                    order = Order.objects.select_for_update().get(id=order_id)
+                    order.paid_status = True
+                    order.payment_id = session['payment_intent']
+                    order.save()
 
-            # Clear the cart (delete order items)
-            OrderItem.objects.filter(order=order).delete()
+                    # Update stock quantities
+                    for item in order.items.all():
+                        product_size = ProductSize.objects.get(product=item.product, size=item.size)
+                        product_size.stock_quantity -= item.quantity
+                        product_size.save()
 
-    elif event['type'] == 'payment_intent.payment_failed':
-        payment_intent = event['data']['object']
-       
+                    logger.info(f"Order {order.id} payment completed and status updated.")
+            except Order.DoesNotExist:
+                logger.error(f"Order {order_id} does not exist.")
+            except ProductSize.DoesNotExist as e:
+                logger.error(f"ProductSize does not exist: {e}")
+            except Exception as e:
+                logger.error(f"Error updating order {order_id}: {e}")
 
     return HttpResponse(status=200)
 
+
+@login_required(login_url='login')
 def create_checkout_session(request):
-    order = get_object_or_404(Order, user=request.user, paid_status=False)
-    if not order.shipping_address:
-        messages.error(request, 'Please add a shipping address before proceeding to payment.')
-        return redirect('add_shipping_address')
-      
-    domain_url = 'http://localhost:8000/'
-    total = int(order.total_price * 100)  # Convert to cents
+    order = Order.objects.filter(user=request.user, paid_status=False).order_by('-order_date').first()
+    if not order or not order.items.exists():
+        messages.error(request, 'Your cart is empty.')
+        return redirect('home')
+
+    domain_url = request.build_absolute_uri('/')[:-1]
+    total = int(order.total_price * 100)  # Stripe expects the amount in cents
 
     try:
         checkout_session = stripe.checkout.Session.create(
@@ -357,8 +414,8 @@ def create_checkout_session(request):
                 },
             ],
             mode='payment',
-            success_url=domain_url + 'success/',
-            cancel_url=domain_url + 'cancel/',
+            success_url=domain_url + reverse('success'),
+            cancel_url=domain_url + reverse('cancel'),
             metadata={
                 'order_id': order.id  # Pass the order ID to the webhook
             }
@@ -368,16 +425,15 @@ def create_checkout_session(request):
         messages.error(request, f'Error creating Stripe checkout session: {str(e)}')
         return redirect('order_detail')
 
-
 def success_view(request):
+    orders = Order.objects.filter(user=request.user, paid_status=False)
+    for order in orders:
+        order.paid_status = True
+        order.save()
+    messages.success(request, 'Payment successful and items have been removed from the cart.')
     return render(request, 'web_shop/success.html')
+
 
 def cancel_view(request):
     return render(request, 'web_shop/cancel.html')
 
-@login_required(login_url='login')
-def clear_cart_items(request):
-    if request.method == 'POST':
-        OrderItem.objects.filter(order__user=request.user, order__paid_status=False).delete()
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'failed', 'message': 'Invalid request method.'}, status=400)

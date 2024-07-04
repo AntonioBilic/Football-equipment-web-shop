@@ -24,7 +24,6 @@ urlpatterns = [
     path('settings/edit/', views.edit_profile, name='edit_profile'),
     path('settings/', views.user_settings, name='user_settings'),
     path('add_shipping_address/', views.add_shipping_address, name='add_shipping_address'),
-    path('clear_cart_items/', views.clear_cart_items, name='clear_cart_items'),
-  
+
  
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
