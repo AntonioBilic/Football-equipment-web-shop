@@ -195,14 +195,17 @@ def product_detail_view(request, id):
 @login_required(login_url='login')
 def order_detail(request):
     order = Order.objects.filter(user=request.user, paid_status=False).first()
+    order_items = []
+    product_sizes = {}
+    out_of_stock_items = []
+
     if order:
         order_items = order.items.all()
-        product_sizes = {item.id: ProductSize.objects.get(product=item.product, size=item.size) for item in order_items}
-        out_of_stock_items = [item for item in order_items if product_sizes[item.id].stock_quantity < item.quantity]
-    else:
-        order_items = []
-        product_sizes = {}
-        out_of_stock_items = []
+        for item in order_items:
+            product_size = ProductSize.objects.get(product=item.product, size=item.size)
+            product_sizes[item.id] = product_size.stock_quantity
+            if product_size.stock_quantity < item.quantity:
+                out_of_stock_items.append(item)
 
     return render(request, 'web_shop/order_detail.html', {
         'order': order,
@@ -210,7 +213,6 @@ def order_detail(request):
         'product_sizes': product_sizes,
         'out_of_stock_items': out_of_stock_items,
     })
-
 
 @login_required(login_url='login')
 def add_to_order(request, product_id):
@@ -225,7 +227,7 @@ def add_to_order(request, product_id):
         product_size = get_object_or_404(ProductSize, product=product, size=size)
 
         if quantity > product_size.stock_quantity:
-            messages.error(request, f'Only {product_size.stock_quantity} of {product.name} (Size: {size.name}) is available.')
+            messages.success(request, f'Only {product_size.stock_quantity} of {product.name} (Size: {size.name}) is available.')
             return redirect('product_detail', id=product_id)
 
         # Get or create an order for the user that is not yet paid
@@ -242,6 +244,10 @@ def add_to_order(request, product_id):
         if not item_created:
             order_item.quantity += quantity
             order_item.save()
+        
+        # Deduct the stock quantity
+        product_size.stock_quantity -= quantity
+        product_size.save()
 
         # Update the order total price
         order.price = order.total_price
@@ -256,6 +262,12 @@ def add_to_order(request, product_id):
 def remove_from_order(request, item_id):
     order_item = get_object_or_404(OrderItem, id=item_id)
     order = order_item.order
+    product_size = get_object_or_404(ProductSize, product=order_item.product, size=order_item.size)
+    
+    # Increase the stock quantity
+    product_size.stock_quantity += order_item.quantity
+    product_size.save()
+    
     order_item.delete()
     
     # Update the order total price after item removal
@@ -268,14 +280,19 @@ def remove_from_order(request, item_id):
 def update_order_item_quantity(request, item_id):
     order_item = get_object_or_404(OrderItem, id=item_id)
     if request.method == 'POST':
-        quantity = int(request.POST.get('quantity', 1))
+        new_quantity = int(request.POST.get('quantity', 1))
         product_size = get_object_or_404(ProductSize, product=order_item.product, size=order_item.size)
 
-        if quantity > product_size.stock_quantity:
-            messages.success(request, f'Only {product_size.stock_quantity} of {order_item.product.name} in size {order_item.size.name} is available.')
+        if new_quantity > product_size.stock_quantity + order_item.quantity:
+            messages.error(request, f'Only {product_size.stock_quantity + order_item.quantity} of {order_item.product.name} in size {order_item.size.name} is available.')
             return redirect('order_detail')
 
-        order_item.quantity = quantity
+        # Adjust stock quantity based on the new quantity
+        product_size.stock_quantity += order_item.quantity  # Revert the stock
+        product_size.stock_quantity -= new_quantity  # Deduct the new quantity
+        product_size.save()
+
+        order_item.quantity = new_quantity
         order_item.save()
 
         # Update the order total price
@@ -286,6 +303,7 @@ def update_order_item_quantity(request, item_id):
         return redirect('order_detail')
 
     return redirect('order_detail')
+
 
 
 @login_required(login_url='login')
@@ -430,7 +448,7 @@ def success_view(request):
     for order in orders:
         order.paid_status = True
         order.save()
-    messages.success(request, 'Payment successful and items have been removed from the cart.')
+    messages.success(request, 'Payment successful')
     return render(request, 'web_shop/success.html')
 
 

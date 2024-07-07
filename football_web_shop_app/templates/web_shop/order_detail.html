@@ -1,5 +1,6 @@
 {% extends "web_shop/base.html" %}
 {% load static %}
+{% load custom_tags %} <!-- Load custom tags here -->
 {% block content %}
 <div class="container mt-5">
     <h2>Your Cart</h2>
@@ -19,10 +20,9 @@
             <tbody>
                 <tr>
                     <td colspan="7">
-                        <h5 class="card-title">Order ID: {{ order.id }}</h5>
-                    </td>
+                    
                 </tr>
-                {% for item in order.items.all %}
+                {% for item in order_items %}
                 <tr>
                     <td>{{ item.product.name }}</td>
                     <td>
@@ -32,9 +32,7 @@
                     <td>
                         <form action="{% url 'update_order_item_quantity' item.id %}" method="post" class="d-inline">
                             {% csrf_token %}
-                            {% with product_sizes=item.id %}
                             <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ product_sizes.stock_quantity }}" class="form-control d-inline-block" style="width: 60px;">
-                            {% endwith %}
                             <button type="submit" class="btn btn-primary btn-sm">Update</button>
                         </form>
                     </td>
@@ -46,9 +44,7 @@
                 </tr>
                 {% if item in out_of_stock_items %}
                 <tr>
-                    <td colspan="7" class="text-danger">
-                        {{ item.product.name }} in size {{ item.size.name }} is not in stock. Please update the quantity or remove the item.
-                    </td>
+                    
                 </tr>
                 {% endif %}
                 {% endfor %}

@@ -5,7 +5,8 @@ def cart_item_count(request):
     if request.user.is_authenticated:
         cart = Order.objects.filter(user=request.user, paid_status=False).first()
         if cart:
-            return {'cart_item_count': sum(item.quantity for item in cart.items.all())}
+            distinct_products = cart.items.values('product_id', 'size_id').distinct()
+            return {'cart_item_count': distinct_products.count()}
     return {'cart_item_count': 0}
 
 
