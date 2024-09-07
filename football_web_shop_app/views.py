@@ -44,10 +44,6 @@ def home(request):
         products = Product.objects.all()
     
     categories = Category.objects.all()
-
-
-
-
     products = Product.objects.all()
     categories = Category.objects.filter(parent=None)
     brands = Brand.objects.all()
@@ -274,7 +270,7 @@ def remove_from_order(request, item_id):
     order.price = sum(item.quantity * item.price for item in order.items.all())
     order.save()
     
-    return redirect('home')
+    return redirect('order_detail')
 
 @login_required(login_url='login')
 def update_order_item_quantity(request, item_id):

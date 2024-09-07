@@ -45,7 +45,7 @@ class OrderItemInline(admin.TabularInline):
 
 # Custom Order Admin
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'price', 'paid_status', 'order_date', 'order_status', 'shipping_address', 'get_order_details')
+    list_display = ('id', 'user', 'price', 'paid_status', 'order_date',  'shipping_address', 'get_order_details')
     list_filter = ('paid_status', 'order_date')
     search_fields = ('user__username', 'payment_id')
     inlines = [OrderItemInline]
@@ -53,7 +53,7 @@ class OrderAdmin(admin.ModelAdmin):
 
     def get_order_details(self, obj):
         items = obj.items.all()
-        return "; ".join([f"{item.product.name} - Size: {item.size.name} - Qty: {item.quantity} - Price: ${item.price} - Total: ${item.price * item.quantity if item.price is not None and item.quantity is not None else 'N/A'}" for item in items])
+        return "; ".join([f"{item.product.name} - Size: {item.size.name} - Qty: {item.quantity} - Price: €{item.price} - Total: €{item.price * item.quantity if item.price is not None and item.quantity is not None else 'N/A'}" for item in items])
     get_order_details.short_description = 'Order Details'
 
 # Custom Order Item Admin
